@@ -14,14 +14,15 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev build-essential
-          python -m pip install --upgrade pip setuptools wheel cython virtualenv
+          python -m pip install --upgrade pip
           python -m pip install "git+https://github.com/kivy/buildozer.git@master"
+          python -m pip install legacy-cgi setuptools cython==0.29.34
 
       - name: Build APK
         shell: bash
