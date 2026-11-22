@@ -9,6 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
+      PIP_NO_BUILD_ISOLATION: "1"
       PYTHONPATH: /tmp/py_shim
     steps:
       - uses: actions/checkout@v4
@@ -26,13 +27,6 @@ jobs:
           def parse_header(line, pdict=None):
               return line, pdict or {}
           EOF
-          cat << 'EOF' > /tmp/py_shim/sitecustomize.py
-          import sys, types
-          if 'cgi' not in sys.modules:
-              m = types.ModuleType('cgi')
-              m.parse_header = lambda line, pdict=None: (line, pdict or {})
-              sys.modules['cgi'] = m
-          EOF
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade "cython>=3.0.11" buildozer virtualenv
 
@@ -41,7 +35,7 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-sitecustomize-fix-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-py311-direct-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Build APK
         run: buildozer android debug
