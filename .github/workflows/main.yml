@@ -20,18 +20,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade --force-reinstall "cython>=3.0.11"
-          python -m pip install buildozer virtualenv
+          python -m pip install --upgrade "cython>=3.0.11" buildozer virtualenv
 
       - uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-cython3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-cgi-shim-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Build APK
-        run: buildozer android debug
+        run: |
+          python -c "import sysconfig, os; p=sysconfig.get_path('purelib'); open(os.path.join(p,'cgi.py'),'w').write('def parse_header(line, pdict=None):\n return line, pdict or {}\n')"
+          buildozer android debug
 
       - uses: actions/upload-artifact@v4
         with:
