@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-      PYTHONPATH: /tmp/cgi_shim
+      PYTHONPATH: /tmp/py_shim
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +21,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          mkdir -p /tmp/cgi_shim
-          printf 'def parse_header(line, pdict=None):\n    return line, pdict or {}\n' > /tmp/cgi_shim/cgi.py
-          for sp in $(python -c "import site, sysconfig; print(' '.join(set(site.getsitepackages() + [sysconfig.get_path('purelib'), sysconfig.get_path('platlib')])))"); do
-            mkdir -p "$sp"
-            cp /tmp/cgi_shim/cgi.py "$sp/cgi.py"
-          done
+          mkdir -p /tmp/py_shim
+          cat << 'EOF' > /tmp/py_shim/cgi.py
+          def parse_header(line, pdict=None):
+              return line, pdict or {}
+          EOF
+          cat << 'EOF' > /tmp/py_shim/sitecustomize.py
+          import sys, types
+          if 'cgi' not in sys.modules:
+              m = types.ModuleType('cgi')
+              m.parse_header = lambda line, pdict=None: (line, pdict or {})
+              sys.modules['cgi'] = m
+          EOF
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade "cython>=3.0.11" buildozer virtualenv
 
@@ -35,7 +41,7 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-cgi-sitepackages-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-sitecustomize-fix-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Build APK
         run: buildozer android debug
