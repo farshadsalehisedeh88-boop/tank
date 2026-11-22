@@ -8,31 +8,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.36 virtualenv
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev build-essential
+          python -m pip install --upgrade pip
+          python -m pip install "git+https://github.com/kivy/buildozer.git@master"
+          python -m pip install legacy-cgi setuptools cython==0.29.34
 
       - name: Build APK
-        run: buildozer android debug
+        shell: bash
+        run: buildozer -v android debug 2>&1 | tee build.log
 
-      - uses: actions/upload-artifact@v4
+      - name: Save log tail
+        if: always()
+        run: tail -n 400 build.log > build-tail.txt || true
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            build-tail.txt
+            build.log
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: apk-output
           path: bin/*.apk
