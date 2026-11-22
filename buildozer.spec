@@ -9,16 +9,16 @@ source.exclude_dirs = bin
 
 version = 1.3
 
-# plyer حذف شد (در کد استفاده نمی‌شود)
-requirements = python3,kivy==2.2.1,requests,urllib3,idna,charset-normalizer,certifi,pyjnius
+# kivy version is intentionally NOT pinned (p4a picks the compatible one)
+requirements = python3,kivy,requests,pyjnius
 
 orientation = landscape
 fullscreen = 1
 
 android.permissions = INTERNET,ACCESS_NETWORK_STATE,RECORD_AUDIO
-# بخش <queries> برای پیدا کردن سرویس تشخیص گفتار (اندروید ۱۱+)
+# <queries> block so the speech recognizer service can be found (Android 11+)
 android.extra_manifest_xml = ./extra_manifest.xml
-# اجازه‌ی HTTP ساده (ربات ESP فقط http دارد؛ بدون این خط اندروید ارتباط را می‌بندد)
+# allow plain http (the ESP robot only speaks http)
 android.extra_manifest_application_arguments = ./application-attributes.xml
 
 android.api = 33
