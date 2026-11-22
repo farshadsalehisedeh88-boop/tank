@@ -8,9 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      PIP_NO_BUILD_ISOLATION: "1"
-      PYTHONPATH: /tmp/py_shim
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -21,26 +19,29 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-          mkdir -p /tmp/py_shim
-          cat << 'EOF' > /tmp/py_shim/cgi.py
-          def parse_header(line, pdict=None):
-              return line, pdict or {}
-          EOF
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade "cython>=3.0.11" buildozer virtualenv
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: buildozer-py311-direct-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev build-essential
+          python -m pip install --upgrade pip setuptools wheel cython virtualenv
+          python -m pip install "git+https://github.com/kivy/buildozer.git@master"
 
       - name: Build APK
-        run: buildozer android debug
+        shell: bash
+        run: buildozer -v android debug 2>&1 | tee build.log
 
-      - uses: actions/upload-artifact@v4
+      - name: Save log tail
+        if: always()
+        run: tail -n 400 build.log > build-tail.txt || true
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            build-tail.txt
+            build.log
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: apk-output
           path: bin/*.apk
